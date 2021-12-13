@@ -1,0 +1,12 @@
+apiVersion: example.com/v1alpha1
+kind: HelloWorld
+metadata:
+  name: hello-world-example
+spec:
+  name: hello-world
+  image: busybox
+  replicas: 4
+  data: |
+   Example of injected data
+status:
+  readyReplicas: 0
