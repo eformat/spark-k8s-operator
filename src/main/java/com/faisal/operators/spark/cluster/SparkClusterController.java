@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import static io.javaoperatorsdk.operator.api.Controller.WATCH_CURRENT_NAMESPACE;
 
+//https://github.com/fabric8io/kubernetes-client/blob/master/doc/CHEATSHEET.md#ingress
 //@Controller(namespaces = "default")
 @Controller(namespaces = WATCH_CURRENT_NAMESPACE)
 public class SparkClusterController implements ResourceController<SparkClusterResource> {
@@ -62,17 +63,17 @@ public class SparkClusterController implements ResourceController<SparkClusterRe
     private final Logger log = LoggerFactory.getLogger(SparkClusterController.class);
 
     @Override
-    public DeleteControl deleteResource(SparkClusterResource sparkClusterRequest, Context<SparkClusterResource> context) {
-        final var spec = sparkClusterRequest.getSpec();
+    public DeleteControl deleteResource(SparkClusterResource sparkClusterResource, Context<SparkClusterResource> context) {
+        final var spec = sparkClusterResource.getSpec();
 
-        log.info("Received {} ", sparkClusterRequest);
+        log.info("Received {} ", sparkClusterResource);
 
-        String namespace = sparkClusterRequest.getMetadata().getNamespace();
+        String namespace = sparkClusterResource.getMetadata().getNamespace();
         log.info("Received NS {} ", namespace);
 
         CustomResourceDefinitionContext sparkClusterCustomResource = CustomResourceDefinitionContext.fromCustomResourceType(SparkClusterResource.class);
 
-        Map<String, Object> sparkClustersWithName = kubernetesClient.customResource(sparkClusterCustomResource).get(namespace, sparkClusterRequest.getMetadata().getName());
+        Map<String, Object> sparkClustersWithName = kubernetesClient.customResource(sparkClusterCustomResource).get(namespace, sparkClusterResource.getMetadata().getName());
         SparkCluster sparkClusterSpec = mapper.convertValue(sparkClustersWithName.get("spec"), SparkCluster.class);
 
         String name = sparkClusterSpec.getName();
@@ -81,6 +82,7 @@ public class SparkClusterController implements ResourceController<SparkClusterRe
         kubernetesClient.replicationControllers().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
         kubernetesClient.pods().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
         kubernetesClient.persistentVolumeClaims().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
+        kubernetesClient.network().ingress().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
         getClusters().delete(name);
         return DeleteControl.DEFAULT_DELETE;
     }
@@ -192,6 +194,7 @@ public class SparkClusterController implements ResourceController<SparkClusterRe
 
     @Override
     public void init(EventSourceManager eventSourceManager) {
+        ResourceController.super.init(eventSourceManager);
         log.info("Spark Cluster operator default spark image = {}", Constants.getDefaultSparkImage());
 
     }

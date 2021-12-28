@@ -4,6 +4,7 @@ import com.faisal.operators.spark.helpers.LabelsHelper;
 import com.faisal.operators.spark.historyserver.HistoryServerHelper;
 import com.faisal.operators.spark.types.*;
 import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.extensions.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
 import java.util.*;
@@ -43,6 +44,31 @@ public class KubernetesSparkClusterDeployer {
             if (cluster.getSparkWebUI()) {
                 Service masterUiService = getService(true, name, 8080, allMasterLabels);
                 list.add(masterUiService);
+
+                //TODO move to its own method
+                list.add( new IngressBuilder()
+                        .withNewMetadata()
+                            .withName(name)
+                                .withLabels(masterUiService.getMetadata().getLabels())
+                        .endMetadata()
+                        .withNewSpec()
+                        .addNewRule()
+                        .withHttp(new HTTPIngressRuleValueBuilder()
+                                        .addNewPath()
+                                        .withPath("/")
+                                        .withNewPathType("ImplementationSpecific")
+                                        .withNewBackend()
+                                        .withServiceName(masterUiService.getMetadata().getName())
+                                        .withNewServicePort("8080")
+                                        .endBackend()
+                                .endPath()
+                                .build()
+                                )
+                        .endRule()
+                        .endSpec()
+                        .build());
+
+
             }
 
             // pvc for history server (in case of sharedVolume strategy)

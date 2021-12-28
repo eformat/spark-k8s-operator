@@ -2,7 +2,6 @@ package com.faisal.operators.spark.historyserver;
 
 import com.faisal.operators.spark.cluster.SparkCluster;
 import com.faisal.operators.spark.types.HistoryServer;
-import com.faisal.operators.spark.types.SparkHistoryServer;
 
 public class HistoryServerHelper {
 

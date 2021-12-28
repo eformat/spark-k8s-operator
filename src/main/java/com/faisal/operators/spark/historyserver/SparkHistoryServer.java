@@ -1,7 +1,11 @@
-package com.faisal.operators.spark.types;
+package com.faisal.operators.spark.historyserver;
 
 
 import com.faisal.operators.EntityInfo;
+import com.faisal.operators.spark.types.Cleaner;
+import com.faisal.operators.spark.types.Kerberos;
+import com.faisal.operators.spark.types.SharedVolume;
+import com.faisal.operators.spark.types.SparkConfiguration;
 import com.fasterxml.jackson.annotation.*;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
@@ -38,8 +42,7 @@ import java.util.Map;
         "persistentPath"
 })
 @RegisterForReflection
-public class SparkHistoryServer
-        extends EntityInfo {
+public class SparkHistoryServer extends EntityInfo {
 
     @JsonProperty("type")
     private SparkHistoryServer.Type type = SparkHistoryServer.Type.fromValue("sharedVolume");

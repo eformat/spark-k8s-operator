@@ -1,7 +1,6 @@
 package com.faisal.operators.spark.historyserver;
 
 import com.faisal.operators.spark.types.SparkConfiguration;
-import com.faisal.operators.spark.types.SparkHistoryServer;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
