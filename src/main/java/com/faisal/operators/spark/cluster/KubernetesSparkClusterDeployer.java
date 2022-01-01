@@ -5,6 +5,7 @@ import com.faisal.operators.spark.historyserver.HistoryServerHelper;
 import com.faisal.operators.spark.types.*;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.extensions.*;
+import io.fabric8.kubernetes.api.model.networking.v1.ServiceBackendPort;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
 import java.util.*;
@@ -46,27 +47,33 @@ public class KubernetesSparkClusterDeployer {
                 list.add(masterUiService);
 
                 //TODO move to its own method
-                list.add( new IngressBuilder()
-                        .withNewMetadata()
-                            .withName(name)
+                io.fabric8.kubernetes.api.model.networking.v1.Ingress ingress =
+                        new io.fabric8.kubernetes.api.model.networking.v1.IngressBuilder()
+                                .withApiVersion("networking.k8s.io/v1")
+                                .withNewMetadata()
+                                .withName(name)
                                 .withLabels(masterUiService.getMetadata().getLabels())
-                        .endMetadata()
-                        .withNewSpec()
-                        .addNewRule()
-                        .withHttp(new HTTPIngressRuleValueBuilder()
+                                .endMetadata()
+                                .withNewSpec()
+                                .addNewRule()
+                                .withHttp(new io.fabric8.kubernetes.api.model.networking.v1.HTTPIngressRuleValueBuilder()
                                         .addNewPath()
                                         .withPath("/")
                                         .withNewPathType("ImplementationSpecific")
                                         .withNewBackend()
-                                        .withServiceName(masterUiService.getMetadata().getName())
-                                        .withNewServicePort("8080")
+                                            .withNewService()
+                                                .withName(masterUiService.getMetadata().getName())
+                                                .withNewPort(null,8080)
+                                            .endService()
+
                                         .endBackend()
-                                .endPath()
-                                .build()
+                                        .endPath()
+                                        .build()
                                 )
-                        .endRule()
-                        .endSpec()
-                        .build());
+                                .endRule()
+                                .endSpec()
+                                .build();
+                list.add(ingress  );
 
 
             }

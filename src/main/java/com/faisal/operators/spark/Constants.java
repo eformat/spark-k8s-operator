@@ -2,7 +2,7 @@ package com.faisal.operators.spark;
 
 public class Constants {
 
-    public static String DEFAULT_SPARK_IMAGE = "quay.io/ml-aml-workshop/spark3:ross";
+    public static String DEFAULT_SPARK_IMAGE = "quay.io/ml-on-k8s/spark:3.0.0"; //ml-aml-workshop/spark3:ross";
     public static String DEFAULT_SPARK_APP_IMAGE = "quay.io/radanalyticsio/openshift-spark:2.4-latest";
     public static final String OPERATOR_TYPE_UI_LABEL = "ui";
     public static final String OPERATOR_TYPE_MASTER_LABEL = "master";
