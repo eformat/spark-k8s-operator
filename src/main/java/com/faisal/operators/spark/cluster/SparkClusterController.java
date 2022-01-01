@@ -82,7 +82,7 @@ public class SparkClusterController implements ResourceController<SparkClusterRe
         kubernetesClient.replicationControllers().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
         kubernetesClient.pods().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
         kubernetesClient.persistentVolumeClaims().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
-        kubernetesClient.network().ingress().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
+        kubernetesClient.network().v1().ingresses().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
         getClusters().delete(name);
         return DeleteControl.DEFAULT_DELETE;
     }

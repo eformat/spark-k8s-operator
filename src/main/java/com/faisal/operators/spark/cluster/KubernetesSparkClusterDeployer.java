@@ -47,10 +47,12 @@ public class KubernetesSparkClusterDeployer {
                 list.add(masterUiService);
 
                 //TODO move to its own method
+                var defaultIngressLabels = getDefaultLabels(name);
                 io.fabric8.kubernetes.api.model.networking.v1.Ingress ingress =
                         new io.fabric8.kubernetes.api.model.networking.v1.IngressBuilder()
                                 .withApiVersion("networking.k8s.io/v1")
                                 .withNewMetadata()
+                                .withLabels(defaultIngressLabels)
                                 .withName(name)
                                 .withLabels(masterUiService.getMetadata().getLabels())
                                 .endMetadata()
