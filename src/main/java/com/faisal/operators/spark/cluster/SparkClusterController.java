@@ -64,7 +64,7 @@ public class SparkClusterController implements ResourceController<SparkClusterRe
 
     @Override
     public DeleteControl deleteResource(SparkClusterResource sparkClusterResource, Context<SparkClusterResource> context) {
-        final var spec = sparkClusterResource.getSpec();
+        final var cluster = sparkClusterResource.getSpec();
 
         log.info("Received {} ", sparkClusterResource);
 
@@ -76,13 +76,21 @@ public class SparkClusterController implements ResourceController<SparkClusterRe
         Map<String, Object> sparkClustersWithName = kubernetesClient.customResource(sparkClusterCustomResource).get(namespace, sparkClusterResource.getMetadata().getName());
         SparkCluster sparkClusterSpec = mapper.convertValue(sparkClustersWithName.get("spec"), SparkCluster.class);
 
-        String name = sparkClusterSpec.getName();
+        String name = sparkClusterResource.getMetadata().getName(); //sparkClusterSpec.getName();
 //        updateStatus(sparkClusterSpec, "deleted");
-        kubernetesClient.services().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
-        kubernetesClient.replicationControllers().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
-        kubernetesClient.pods().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
-        kubernetesClient.persistentVolumeClaims().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
-        kubernetesClient.network().v1().ingresses().inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name)).delete();
+        //the label radanalytics.ioSparkCluster has name in it
+        //replace withLabels(getDeployer().getDefaultLabels(name)) to withLabel("radanalytics.ioSparkCluster", name)
+        kubernetesClient.services().inNamespace(namespace).withLabel("radanalytics.ioSparkCluster", name).delete();
+        kubernetesClient.replicationControllers().inNamespace(namespace).withLabel("radanalytics.ioSparkCluster", name).delete();
+        kubernetesClient.pods().inNamespace(namespace).withLabel("radanalytics.ioSparkCluster", name).delete();
+        kubernetesClient.persistentVolumeClaims().inNamespace(namespace).withLabel("radanalytics.ioSparkCluster", name).delete();
+        log.info("Cluster with UI {}", cluster.getSparkWebUI());
+        if (cluster.getSparkWebUI()) {
+            log.info("Deleting ingress {}", name);
+            kubernetesClient.network().v1().ingresses().inNamespace(namespace).withLabel("radanalytics.ioSparkCluster", name).delete();
+        }
+
+
         getClusters().delete(name);
         return DeleteControl.DEFAULT_DELETE;
     }

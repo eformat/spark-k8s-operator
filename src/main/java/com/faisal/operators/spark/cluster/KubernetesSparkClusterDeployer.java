@@ -7,6 +7,8 @@ import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.extensions.*;
 import io.fabric8.kubernetes.api.model.networking.v1.ServiceBackendPort;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -19,6 +21,9 @@ public class KubernetesSparkClusterDeployer {
     private final String entityName;
     private String prefix;
     private String namespace;
+    private String ingress_host_postfix;
+
+    private final Logger log = LoggerFactory.getLogger(KubernetesSparkClusterDeployer.class);
 
     //TODO simplyfi the sig
     KubernetesSparkClusterDeployer(KubernetesClient client, String entityName, String prefix, String namespace) {
@@ -26,6 +31,10 @@ public class KubernetesSparkClusterDeployer {
         this.entityName = entityName;
         this.prefix = prefix;
         this.namespace = namespace;
+        //Tech Debt
+        this.ingress_host_postfix = System.getenv("INGRESS_HOST");
+        log.info("Th eingress prefix is {}", ingress_host_postfix);
+
     }
 
     public KubernetesResourceList getResourceList(SparkCluster cluster) {
@@ -58,6 +67,7 @@ public class KubernetesSparkClusterDeployer {
                                 .endMetadata()
                                 .withNewSpec()
                                 .addNewRule()
+                                .withHost(name + ingress_host_postfix)
                                 .withHttp(new io.fabric8.kubernetes.api.model.networking.v1.HTTPIngressRuleValueBuilder()
                                         .addNewPath()
                                         .withPath("/")
