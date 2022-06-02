@@ -77,7 +77,6 @@ public class KubernetesSparkClusterDeployer {
                                                 .withName(masterUiService.getMetadata().getName())
                                                 .withNewPort(null,8080)
                                             .endService()
-
                                         .endBackend()
                                         .endPath()
                                         .build()

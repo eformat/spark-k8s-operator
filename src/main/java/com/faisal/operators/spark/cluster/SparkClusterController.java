@@ -269,7 +269,6 @@ public class SparkClusterController implements ResourceController<SparkClusterRe
             JSONObject sparkCluster = new JSONObject(kubernetesClient.customResource(sparkClusterCustomResource)
                     .get(namespace, sparkClusterName));
              sparkCluster.put("status", statusJson);
-            System.out.println("asdasdasd");
             kubernetesClient.customResource(sparkClusterCustomResource)
                     .edit(namespace, sparkClusterName, sparkCluster);
 //            kubernetesClient.customResource(sparkClusterCustomResource).inNamespace(namespace).withName(sparkClusterName)
