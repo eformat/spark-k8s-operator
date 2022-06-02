@@ -21,11 +21,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
-import static io.javaoperatorsdk.operator.api.Controller.WATCH_CURRENT_NAMESPACE;
-
-//https://github.com/fabric8io/kubernetes-client/blob/master/doc/CHEATSHEET.md#ingress
-//@Controller(namespaces = "default")
-@Controller(namespaces = WATCH_CURRENT_NAMESPACE)
+@Controller
 public class SparkClusterController implements ResourceController<SparkClusterResource> {
 
 
