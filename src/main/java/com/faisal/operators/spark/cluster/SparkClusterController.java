@@ -6,8 +6,10 @@ import com.faisal.operators.spark.types.Worker;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
+import io.fabric8.kubernetes.api.model.ListOptionsBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
+import io.fabric8.openshift.client.OpenShiftClient;
 import io.javaoperatorsdk.operator.api.*;
 import io.javaoperatorsdk.operator.processing.event.EventSourceManager;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -25,7 +27,8 @@ import static io.javaoperatorsdk.operator.api.Controller.WATCH_CURRENT_NAMESPACE
 
 //https://github.com/fabric8io/kubernetes-client/blob/master/doc/CHEATSHEET.md#ingress
 //@Controller(namespaces = "default")
-@Controller(namespaces = WATCH_CURRENT_NAMESPACE)
+//@Controller(namespaces = WATCH_CURRENT_NAMESPACE, name = "sparkapp")
+@Controller(name = "sparkapp")
 public class SparkClusterController implements ResourceController<SparkClusterResource> {
 
 
@@ -46,8 +49,17 @@ public class SparkClusterController implements ResourceController<SparkClusterRe
 
             runningClusters.put(sparkClusterSpec);
         }
+
+        var routeCRD = kubernetesClient.apiextensions().v1().customResourceDefinitions().list(new ListOptionsBuilder().withKind("Route").withApiVersion("route.openshift.io/v1").build());
+        if(routeCRD != null && !routeCRD.getItems().isEmpty()){
+            log.info("OpenShift Detected");
+            isOpenShift = true;
+        }
+
     }
 
+    //check if route crd exists
+    private boolean isOpenShift = false;
 
     private final KubernetesClient kubernetesClient;
 
@@ -86,8 +98,16 @@ public class SparkClusterController implements ResourceController<SparkClusterRe
         kubernetesClient.persistentVolumeClaims().inNamespace(namespace).withLabel("radanalytics.ioSparkCluster", name).delete();
         log.info("Cluster with UI {}", cluster.getSparkWebUI());
         if (cluster.getSparkWebUI()) {
-            log.info("Deleting ingress {}", name);
-            kubernetesClient.network().v1().ingresses().inNamespace(namespace).withLabel("radanalytics.ioSparkCluster", name).delete();
+            log.info("Deleting route {}", name);
+            if(isOpenShift){
+                OpenShiftClient openShiftClient = kubernetesClient.adapt(OpenShiftClient.class);
+                openShiftClient.routes().inNamespace(namespace).withLabel("radanalytics.ioSparkCluster", name).delete();
+
+
+            }else {
+                log.info("Deleting ingress {}", name);
+                kubernetesClient.network().v1().ingresses().inNamespace(namespace).withLabel("radanalytics.ioSparkCluster", name).delete();
+            }
         }
 
 
@@ -179,20 +199,20 @@ public class SparkClusterController implements ResourceController<SparkClusterRe
 
         if (isOnlyScale(existingCluster, sparkClusterSpec)) {
             log.info("scaling from {} worker replicas to {}", existingCluster.getWorker().getInstances(), newWorkers);
-            kubernetesClient.replicationControllers().inNamespace(namespace).withName(name + "-w").scale(newWorkers);
+            kubernetesClient.replicationControllers().inNamespace(sparkClusterSpec.getNamespace()).withName(name + "-w").scale(newWorkers);
 
             // update metrics
-            MetricsHelper.workers.labels(sparkClusterSpec.getName(), namespace).set(sparkClusterSpec.getWorker().getInstances());
+            MetricsHelper.workers.labels(sparkClusterSpec.getName(), sparkClusterSpec.getNamespace()).set(sparkClusterSpec.getWorker().getInstances());
             updateStatus(sparkClusterSpec, "scaled");
         } else {
             log.info("recreating cluster {}", existingCluster.getName());
-            KubernetesResourceList list = getDeployer().getResourceList(sparkClusterSpec);
+            KubernetesResourceList list = getDeployer().getResourceList(sparkClusterSpec, isOpenShift);
             try {
-                kubernetesClient.resourceList(list).inNamespace(namespace).createOrReplace();
+                kubernetesClient.resourceList(list).inNamespace(sparkClusterSpec.getNamespace()).createOrReplace();
             } catch (Exception e) {
                 log.warn("deleting and creating cluster {}", existingCluster.getName());
-                kubernetesClient.resourceList(list).inNamespace(namespace).delete();
-                kubernetesClient.resourceList(list).inNamespace(namespace).createOrReplace();
+                kubernetesClient.resourceList(list).inNamespace(sparkClusterSpec.getNamespace()).delete();
+                kubernetesClient.resourceList(list).inNamespace(sparkClusterSpec.getNamespace()).createOrReplace();
             }
             getClusters().put(sparkClusterSpec);
             updateStatus(sparkClusterSpec, "ready");
@@ -212,8 +232,9 @@ public class SparkClusterController implements ResourceController<SparkClusterRe
     private KubernetesSparkClusterDeployer deployer;
 
     public void doAdd(SparkCluster sparkClusterSpec) {
-        KubernetesResourceList list = getDeployer().getResourceList(sparkClusterSpec);
-        kubernetesClient.resourceList(list).inNamespace(namespace).createOrReplace();
+        KubernetesResourceList list = getDeployer().getResourceList(sparkClusterSpec, isOpenShift);
+//        kubernetesClient.resourceList(list).inNamespace(namespace).createOrReplace();
+        kubernetesClient.resourceList(list).inNamespace(sparkClusterSpec.getNamespace()).createOrReplace();
         getClusters().put(sparkClusterSpec);
 //        updateStatus(cluster, "ready");
 

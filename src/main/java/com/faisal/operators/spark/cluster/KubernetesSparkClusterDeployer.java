@@ -4,9 +4,9 @@ import com.faisal.operators.spark.helpers.LabelsHelper;
 import com.faisal.operators.spark.historyserver.HistoryServerHelper;
 import com.faisal.operators.spark.types.*;
 import io.fabric8.kubernetes.api.model.*;
-import io.fabric8.kubernetes.api.model.extensions.*;
-import io.fabric8.kubernetes.api.model.networking.v1.ServiceBackendPort;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.openshift.api.model.RouteBuilder;
+import io.fabric8.openshift.client.OpenShiftClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +17,7 @@ import static com.faisal.operators.spark.helpers.LabelsHelper.OPERATOR_KIND_LABE
 
 
 public class KubernetesSparkClusterDeployer {
-    private KubernetesClient client;
+    private KubernetesClient kubernetesClient;
     private final String entityName;
     private String prefix;
     private String namespace;
@@ -26,19 +26,24 @@ public class KubernetesSparkClusterDeployer {
     private final Logger log = LoggerFactory.getLogger(KubernetesSparkClusterDeployer.class);
 
     //TODO simplyfi the sig
-    KubernetesSparkClusterDeployer(KubernetesClient client, String entityName, String prefix, String namespace) {
-        this.client = client;
+    KubernetesSparkClusterDeployer(KubernetesClient kubernetesClient, String entityName, String prefix, String namespace) {
+        this.kubernetesClient = kubernetesClient;
         this.entityName = entityName;
         this.prefix = prefix;
         this.namespace = namespace;
         //Tech Debt
-        this.ingress_host_postfix = System.getenv("INGRESS_HOST");
+        this.ingress_host_postfix = System.getenv("INGRESS_HOST") == null ? "" : System.getenv("INGRESS_HOST");
+
         log.info("Th eingress prefix is {}", ingress_host_postfix);
 
     }
 
     public KubernetesResourceList getResourceList(SparkCluster cluster) {
-        synchronized (this.client) {
+        return getResourceList(cluster, false);
+    }
+
+    public KubernetesResourceList getResourceList(SparkCluster cluster, boolean isOpenShift) {
+        synchronized (this.kubernetesClient) {
             checkForInjectionVulnerabilities(cluster, namespace);
             String name = cluster.getName();
 
@@ -55,37 +60,68 @@ public class KubernetesSparkClusterDeployer {
                 Service masterUiService = getService(true, name, 8080, allMasterLabels);
                 list.add(masterUiService);
 
-                //TODO move to its own method
-                var defaultIngressLabels = getDefaultLabels(name);
-                io.fabric8.kubernetes.api.model.networking.v1.Ingress ingress =
-                        new io.fabric8.kubernetes.api.model.networking.v1.IngressBuilder()
-                                .withApiVersion("networking.k8s.io/v1")
-                                .withNewMetadata()
-                                .withLabels(defaultIngressLabels)
-                                .withName(name)
-                                .withLabels(masterUiService.getMetadata().getLabels())
-                                .endMetadata()
-                                .withNewSpec()
-                                .addNewRule()
-                                .withHost(name + ingress_host_postfix)
-                                .withHttp(new io.fabric8.kubernetes.api.model.networking.v1.HTTPIngressRuleValueBuilder()
-                                        .addNewPath()
-                                        .withPath("/")
-                                        .withNewPathType("ImplementationSpecific")
-                                        .withNewBackend()
+                if(isOpenShift){
+                    OpenShiftClient openShiftClient = kubernetesClient.adapt(OpenShiftClient.class);
+                    var sparkUiRoute = new RouteBuilder()
+                            .withNewMetadata()
+                            .withName(name)
+                            .withLabels(getDefaultLabels(name))
+                            .withLabels(masterUiService.getMetadata().getLabels())
+                            .endMetadata()
+                            .withNewSpec()
+                                    .withNewPort()
+                                            .withNewTargetPort(8080)
+                                    .endPort()
+                                    .withNewTls()
+                                        .withNewInsecureEdgeTerminationPolicy("None")
+                                        .withNewTermination("edge")
+                                    .endTls()
+                                    .withNewTo()
+                                        .withNewKind("Service")
+                                        .withNewName(masterUiService.getMetadata().getName())
+                                    .endTo()
+                            .endSpec()
+                        .build();
+
+
+
+
+
+                    list.add(sparkUiRoute);
+
+                }else {
+                    //TODO move to its own method
+                    var defaultIngressLabels = getDefaultLabels(name);
+                    io.fabric8.kubernetes.api.model.networking.v1.Ingress ingress =
+                            new io.fabric8.kubernetes.api.model.networking.v1.IngressBuilder()
+                                    .withApiVersion("networking.k8s.io/v1")
+                                    .withNewMetadata()
+                                    .withLabels(defaultIngressLabels)
+                                    .withName(name)
+                                    .withLabels(masterUiService.getMetadata().getLabels())
+                                    .endMetadata()
+                                    .withNewSpec()
+                                    .addNewRule()
+                                    .withHost(name + ingress_host_postfix)
+                                    .withHttp(new io.fabric8.kubernetes.api.model.networking.v1.HTTPIngressRuleValueBuilder()
+                                            .addNewPath()
+                                            .withPath("/")
+                                            .withNewPathType("ImplementationSpecific")
+                                            .withNewBackend()
                                             .withNewService()
-                                                .withName(masterUiService.getMetadata().getName())
-                                                .withNewPort(null,8080)
+                                            .withName(masterUiService.getMetadata().getName())
+                                            .withNewPort(null, 8080)
                                             .endService()
 
-                                        .endBackend()
-                                        .endPath()
-                                        .build()
-                                )
-                                .endRule()
-                                .endSpec()
-                                .build();
-                list.add(ingress  );
+                                            .endBackend()
+                                            .endPath()
+                                            .build()
+                                    )
+                                    .endRule()
+                                    .endSpec()
+                                    .build();
+                    list.add(ingress);
+                }
 
 
             }
@@ -395,10 +431,10 @@ public class KubernetesSparkClusterDeployer {
     private boolean cmExists(String name) {
         ConfigMap configMap;
         if ("*".equals(namespace)) {
-            List<ConfigMap> items = client.configMaps().inAnyNamespace().withField("metadata.name", name).list().getItems();
+            List<ConfigMap> items = kubernetesClient.configMaps().inAnyNamespace().withField("metadata.name", name).list().getItems();
             configMap = items != null && !items.isEmpty() ? items.get(0) : null;
         } else {
-            configMap = client.configMaps().inNamespace(namespace).withName(name).get();
+            configMap = kubernetesClient.configMaps().inNamespace(namespace).withName(name).get();
         }
         return configMap != null && configMap.getData() != null && !configMap.getData().isEmpty();
     }
