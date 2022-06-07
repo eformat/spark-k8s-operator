@@ -1,0 +1,26 @@
+apiVersion: radanalytics.io/v1
+kind: SparkCluster
+metadata:
+  name: "sample-spark"
+spec:
+  worker:
+    instances: "1"                                      # optional defaults to 1
+    memory: "1Gi"                                       # optional no defaults
+    cpu: 1                                              # optional no defaults
+  master:
+    instances: "1"                                      # optional defaults to 1
+    memory: "1Gi"                                       # optional no defaults
+    cpu: 0.5                                            # optional no defaults
+  customImage: 'quay.io/ml-aml-workshop/spark3:ross'
+  metrics: true                                        # on each pod expose the metrics endpoint on port 7777 for prometheus, defautls to false
+  sparkWebUI: true                                      # create a service with the Spark UI, defaults to true
+  env:                                                  # optional
+    - name: SPARK_WORKER_CORES
+      value: 1
+    - name: FOO
+      value: bar
+    - name: SPARK_METRICS_ON
+      value: prometheus
+  sparkConfiguration:                                   # optional, it overrides the config defined above
+    - name: spark.executor.memory
+      value: 1
