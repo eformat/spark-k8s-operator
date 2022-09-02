@@ -22,6 +22,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
+import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.WebSocket;
@@ -207,6 +208,7 @@ public abstract class AbstractWatchManager<T> implements Watch {
             this.client = client.newBuilder()
                     .retryOnConnectionFailure(true)
                     .pingInterval(1, TimeUnit.SECONDS)
+                    .connectionPool(new ConnectionPool(0, 60, TimeUnit.SECONDS))
                     .eventListener(new ErrorEventListener())
                     .build();
 
