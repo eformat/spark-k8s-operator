@@ -77,6 +77,17 @@
       <groupId>io.quarkiverse.operatorsdk</groupId>
       <artifactId>quarkus-operator-sdk</artifactId>
       <version>1.8.2</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.javaoperatorsdk</groupId>
+          <artifactId>operator-framework-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.javaoperatorsdk</groupId>
+      <artifactId>operator-framework-core</artifactId>
+      <version>1.8.4</version>
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/io.kubernetes/client-java -->
