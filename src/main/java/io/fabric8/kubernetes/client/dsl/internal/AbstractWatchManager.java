@@ -16,7 +16,7 @@ package io.fabric8.kubernetes.client.dsl.internal;
  * limitations under the License.
  */
 
-import com.faisal.operators.okhttp3.ErrorEventListener;
+import com.acme.operators.okhttp3.ErrorEventListener;
 import io.fabric8.kubernetes.api.model.ListOptions;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watch;
