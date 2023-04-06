@@ -18,6 +18,7 @@ import java.util.Map;
 /**
  * A Spark history server configuration
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
         "type",

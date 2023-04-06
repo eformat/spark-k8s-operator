@@ -1,7 +1,6 @@
 package com.acme.operators.spark.historyserver;
 
 import com.acme.operators.spark.cluster.SparkClusterController;
-import com.faisal.operators.spark.cluster.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.KubernetesClient;

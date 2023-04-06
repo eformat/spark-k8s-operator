@@ -6,6 +6,7 @@ package io.fabric8.kubernetes.client.dsl.internal;
 //
 
 
+import com.acme.operators.okhttp3.NamedRunnable;
 import io.fabric8.kubernetes.api.model.Status;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.WatcherException;
@@ -65,7 +66,7 @@ abstract class WatcherWebSocketListener<T> extends WebSocketListener {
                     return;
                 }
 
-                Status status = OperationSupport.createStatus(response);
+                Status status = OperationSupport.createStatus(response.code(), response.message());
                 this.closeBody(response);
                 logger.warn("Exec Failure: HTTP {}, Status: {} - {}", new Object[]{code, status.getCode(), status.getMessage(), t});
                 if (!this.started.get()) {

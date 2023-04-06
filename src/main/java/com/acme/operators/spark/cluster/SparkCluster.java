@@ -2,7 +2,6 @@ package com.acme.operators.spark.cluster;
 
 import com.acme.operators.EntityInfo;
 import com.acme.operators.spark.types.*;
-import com.faisal.operators.spark.types.*;
 import com.fasterxml.jackson.annotation.*;
 
 import java.util.ArrayList;
@@ -10,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
         "master",

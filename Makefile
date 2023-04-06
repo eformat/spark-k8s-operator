@@ -2,7 +2,7 @@
 REGISTRY ?= quay.io
 REPOSITORY ?= $(REGISTRY)/eformat/spark-k8s-operator
 
-IMG := $(REPOSITORY):1.3.5
+IMG := $(REPOSITORY):1.3.6
 
 compile:
 	mvn clean package -DskipTests

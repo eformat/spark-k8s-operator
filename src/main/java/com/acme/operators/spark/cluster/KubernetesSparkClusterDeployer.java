@@ -4,7 +4,6 @@ import com.acme.operators.spark.Constants;
 import com.acme.operators.spark.helpers.LabelsHelper;
 import com.acme.operators.spark.historyserver.HistoryServerHelper;
 import com.acme.operators.spark.types.*;
-import com.faisal.operators.spark.types.*;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.openshift.api.model.RouteBuilder;
